@@ -12,6 +12,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.log('SW Error:', e)); });
+  }
+</script>
 <style>
 :root{--gold:#f0b429;--gold2:#e07b00;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;--purple:#a855f7;--teal:#14b8a6;--orange:#f97316;--bg:#060e1a;--card:#0f1c2e;--card2:#162035;--border:rgba(240,180,41,0.12);--text:#f1f5f9;--muted:#64748b;--soft:#94a3b8;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -375,6 +380,37 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
       <input type="text" id="confPass" placeholder="Dobara likho..." style="font-size:16px;letter-spacing:2px;font-weight:800;">
     </div>
     <div id="passMsg" style="font-size:12px;font-weight:700;min-height:16px;margin-bottom:10px;padding:8px;border-radius:8px;display:none;"></div>
+    
+    <!-- MAINTENANCE CONTROL -->
+    <div style="margin:16px 0; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:12px;">
+      <div style="font-size:10px; font-weight:800; color:var(--red); letter-spacing:1px; margin-bottom:10px;">🛠️ MAINTENANCE MODE (APP PAUSE)</div>
+      <label class="switch" style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <input type="checkbox" id="maintToggle" style="width:20px; height:20px;">
+        <span style="font-size:13px; font-weight:700;">Enable Maintenance Mode</span>
+      </label>
+      <div style="font-size:10px; color:var(--soft); margin-top:6px;">Jab ye ON hoga, staff app use nahi kar sakay ga.</div>
+    </div>
+
+    <!-- PIN SECURITY SETTING -->
+    <div style="margin:16px 0; background:rgba(168,85,247,0.06); border:1px solid rgba(168,85,247,0.2); border-radius:10px; padding:12px;">
+      <div style="font-size:10px; font-weight:800; color:var(--purple); letter-spacing:1px; margin-bottom:10px;">🔐 SECURITY SETTINGS</div>
+      <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+        <input type="checkbox" id="alwaysPinToggle" style="width:20px; height:20px;">
+        <span style="font-size:13px; font-weight:700;">Always ask for PIN on open</span>
+      </label>
+      <div style="font-size:10px; color:var(--soft); margin-top:6px;">Staff ko har dafa app kholne par PIN dena paray ga.</div>
+    </div>
+
+    <!-- APP VERSION Control -->
+    <div style="margin:16px 0; background:rgba(59,130,246,0.06); border:1px solid rgba(59,130,246,0.2); border-radius:10px; padding:12px;">
+      <div style="font-size:10px; font-weight:800; color:var(--blue); letter-spacing:1px; margin-bottom:10px;">🔄 APP VERSION (SYNC)</div>
+      <div class="fl">
+        <label>Current Version</label>
+        <input type="text" id="appVer" placeholder="v1.x.x" style="font-size:14px; color:var(--blue);">
+      </div>
+      <div style="font-size:10px; color:var(--soft); margin-top:6px;">Isay badalne par staff ko "Update Available" ka message jaye ga.</div>
+    </div>
+
     <button class="btn-gold" onclick="saveSettings()">💾 Save All Settings</button>
     <div style="margin-top:12px;background:rgba(0,0,0,0.2);border-radius:8px;padding:10px 14px;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -707,6 +743,9 @@ function loadSettings(){
         document.getElementById('hourlyRate').value=d.rate;
         localStorage.setItem('club_rate',d.rate);
       }
+      if(d.maint!==undefined) document.getElementById('maintToggle').checked=d.maint;
+      if(d.alwaysPin!==undefined) document.getElementById('alwaysPinToggle').checked=d.alwaysPin;
+      if(d.version) document.getElementById('appVer').value=d.version;
     }
   }).catch(function(){});
 }
@@ -715,9 +754,12 @@ function saveSettings(){
   var np=document.getElementById('newPass').value.trim();
   var cp=document.getElementById('confPass').value.trim();
   var rate=document.getElementById('hourlyRate').value;
+  var maint=document.getElementById('maintToggle').checked;
+  var alwaysPin=document.getElementById('alwaysPinToggle').checked;
+  var version=document.getElementById('appVer').value.trim();
   var msg=document.getElementById('passMsg');
   
-  var upd={updatedAt:new Date().toISOString()};
+  var upd={updatedAt:new Date().toISOString(), maint:maint, alwaysPin:alwaysPin, version:version};
   
   if(np){
     if(np.length<4){msg.style.display='block';msg.style.background='rgba(239,68,68,0.12)';msg.style.color='var(--red)';msg.textContent='Minimum 4 characters for password!';return;}
