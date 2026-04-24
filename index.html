@@ -26,8 +26,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .hdr{background:linear-gradient(180deg,#0a1628,#060e1a);border-bottom:2px solid var(--border);padding:10px 14px;position:sticky;top:0;z-index:200;}
 .hdr-row{display:flex;align-items:center;justify-content:space-between;}
 .hdr-brand{display:flex;align-items:center;gap:10px;}
-.hdr-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+.hdr-logo{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;overflow:hidden;border:2px solid var(--gold);}
+.hdr-logo img{width:100%;height:100%;object-fit:cover;}
 .hdr-name{font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:2px;background:linear-gradient(90deg,var(--gold),#fff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
 .hdr-sub{font-size:9px;color:var(--muted);}
 .clk{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);font-weight:700;}
 .sdot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;display:inline-block;}
@@ -203,9 +205,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 <div class="hdr">
   <div class="hdr-row">
     <div class="hdr-brand">
-      <div class="hdr-logo">🏏</div>
+      <div class="hdr-logo"><img src="icon.jpg" alt="Jahanzeb"></div>
       <div>
         <div class="hdr-name">JAHANZEB BALOCH — ADMIN</div>
+
         <div class="hdr-sub">Sultans Indoor Cricket Club, Multan</div>
       </div>
     </div>
@@ -224,6 +227,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <div class="tab" onclick="go('feed')">Live Feed</div>
   <div class="tab" onclick="go('notes')">Notes</div>
   <div class="tab" onclick="go('history')">📜 History</div>
+  <div class="tab" onclick="go('online')">🌐 Online <span id="onlineCount" style="background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:10px;display:none;">0</span></div>
   <div class="tab" onclick="go('settings')">Settings</div>
 </div>
 
@@ -232,6 +236,15 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <br>
   <div class="sh"><div class="sh-t">Live Match Timer</div><span class="sdot"></span></div>
   <div id="timerSec" style="margin-bottom:12px;"></div>
+
+  <!-- PENDING ONLINE BOOKINGS (QUICK VIEW) -->
+  <div id="onlineAlert" style="display:none; background:rgba(59,130,246,0.1); border:1.5px solid rgba(59,130,246,0.3); border-radius:15px; padding:15px; margin-bottom:15px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="font-family:'Bebas Neue',sans-serif; font-size:18px; color:var(--blue); letter-spacing:1px;">🌐 New Online Bookings</div>
+      <button class="btn-sm" onclick="go('online')" style="background:var(--blue); color:#fff; border:none;">Review All</button>
+    </div>
+    <div id="onlineList"></div>
+  </div>
 
   <div class="sh">
     <div class="sh-t">Today's Summary</div>
@@ -293,6 +306,21 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <div class="tw"><table>
     <thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Time</th><th>Hrs</th><th>Total</th><th>Advance</th><th>Method</th><th>Cash</th><th>Account</th><th>Paid</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="bkTbl"></tbody>
+  </table></div>
+</div>
+
+</div>
+
+<!-- ONLINE BOOKINGS PAGE -->
+<div class="pg" id="pg-online">
+  <br>
+  <div class="sh"><div class="sh-t">🌐 Online Booking Requests</div></div>
+  <div style="background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:12px; margin-bottom:15px; font-size:12px; color:var(--soft);">
+    Customers ne website se booking ki hai. TRID check karein aur confirm karein.
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Time</th><th>Hrs</th><th>Advance</th><th>TRID</th><th>Actions</th></tr></thead>
+    <tbody id="onlineTbl"></tbody>
   </table></div>
 </div>
 
@@ -487,8 +515,12 @@ function pad(n){return n<10?'0'+n:n;}
 function tick(){
   try{
     var n=new Date();
-    var el=document.getElementById('clk');
-    if(el){var h=n.getHours(),m=n.getMinutes();el.textContent=(h%12||12)+':'+pad(m)+' '+(h<12?'AM':'PM');}
+    var clk=document.getElementById('clk');
+    if(clk){
+      var h=n.getHours(), m=String(n.getMinutes()).padStart(2,'0'), ap=h>=12?'PM':'AM';
+      var h12=h%12||12;
+      clk.textContent=h12+':'+m+' '+ap;
+    }
   }catch(e){}
 }
 setInterval(tick,1000);tick();
@@ -497,7 +529,8 @@ var Rs=function(n){return 'Rs.'+Number(n||0).toLocaleString('en-PK');};
 var today=function(){var d=new Date();var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;};
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast on '+(t||'ok');setTimeout(function(){el.className='toast';},3000);}
 function pmbadge(m){var mp={cash:'bx-g',bank:'bx-b',jazz:'bx-p',easy:'bx-t'};var ml={cash:'Cash',bank:'Alfalah',jazz:'Jazz',easy:'Easy'};return '<span class="bx '+(mp[m]||'bx-g')+'">'+(ml[m]||m||'—')+'</span>';}
-function sbadge(s){if(s==='paid')return '<span class="bx bx-g">PAID</span>';if(s==='partial')return '<span class="bx bx-y">PARTIAL</span>';if(s==='pre')return '<span class="bx bx-o">PRE</span>';return '';}
+function sbadge(s){if(s==='paid')return '<span class="bx bx-g">✅ PAID</span>';if(s==='partial')return '<span class="bx bx-y">💛 PARTIAL</span>';if(s==='pre')return '<span class="bx bx-o">⏳ PRE</span>';if(s==='waiting_approval')return '<span class="bx bx-b">⏳ WAITING APPROVAL</span>';return '<span class="bx bx-r">❌ PENDING</span>';}
+
 function vbadge(v){if(v==='vip')return '<span class="bx bx-y">VIP</span>';if(v==='new')return '<span class="bx bx-b">NEW</span>';return '<span class="bx bx-t">Regular</span>';}
 function waLink(ph,msg){var p=ph.replace(/[^0-9]/g,'');var i=p.startsWith('0')?'92'+p.slice(1):p;return 'https://wa.me/'+i+'?text='+encodeURIComponent(msg);}
 function waDue(b){return 'Assalam o Alaikum '+b.nm+'!\nThe Sultans Indoor Cricket Club — Multan\n\nYour payment is pending:\nDate: '+b.date+'\nTotal: '+Rs(b.fin)+'\nDue: '+Rs(b.due)+'\n\nJazzCash: 0300-3510175 (Abdul Gaffar)\nBank Alfalah: 83721010111101\n\nThank you!';}
@@ -514,14 +547,35 @@ function startSync(){
     allBks=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.createdAt||b.date||'').localeCompare(a.createdAt||a.date||'');});
     document.getElementById('sdot').style.background='var(--green)';
     snap.docChanges().forEach(function(ch){
-      if(ch.type==='added'||ch.type==='modified'){
+      if(ch.type==='added' || ch.type==='modified'){
         var d=ch.doc.data(),t=new Date().toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit'}),txt='',color='var(--green)';
+        
+        // Notification Sound Logic
+        var isNew = ch.type==='added';
+        
         if(d.status==='pre'){txt='Pre-Match: '+d.nm+' — '+Rs(d.fin)+' (Adv: '+Rs(d.advAmt)+')';color='var(--orange)';}
         else if(d.status==='paid'){txt='Complete: '+d.nm+' — '+Rs(d.fin)+' PAID';color='var(--green)';}
         else if(d.status==='partial'){txt='Partial: '+d.nm+' — Due: '+Rs(d.due);color='var(--gold)';}
-        if(txt){feedItems.unshift({txt:txt,t:t,color:color});if(feedItems.length>50)feedItems.pop();if(document.getElementById('pg-feed').classList.contains('on'))renderFeed();}
+        else if(d.status==='waiting_approval'||d.status==='pending'){
+            txt='🌐 Online Request: '+d.nm+' (TRID: '+d.trid+')';
+            color='var(--blue)';
+            // Sound and Toast for new online requests
+            if(isNew) {
+                toast('New Online Booking Request! 🔔', 'info');
+                try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
+            }
+        }
+
+        if(txt){
+            feedItems.unshift({txt:txt,t:t,color:color});
+            if(feedItems.length>50)feedItems.pop();
+            // Show toast for all new activities if not initial load
+            if(isNew && snap.size > feedItems.length) { toast(txt, 'info'); }
+            if(document.getElementById('pg-feed').classList.contains('on')) renderFeed();
+        }
       }
     });
+    renderOnlineAlert();
     refreshActive();
   },function(err){
     try{document.getElementById('sdot').style.background='var(--red)';}catch(e){}
@@ -557,7 +611,54 @@ function go(tab){
   if(tab==='feed')renderFeed();
   if(tab==='notes')renderNotes();
   if(tab==='history')renderHistory();
+  if(tab==='online')renderOnline();
   if(tab==='settings')loadSettings();
+}
+
+function renderOnlineAlert(){
+  var pend = allBks.filter(function(b){return b.status==='waiting_approval'||b.status==='pending';});
+
+  var alert = document.getElementById('onlineAlert');
+  var count = document.getElementById('onlineCount');
+  if(!alert || !count) return;
+  if(pend.length > 0){
+    alert.style.display = 'block';
+    count.style.display = 'inline-block';
+    count.textContent = pend.length;
+    document.getElementById('onlineList').innerHTML = pend.slice(0,3).map(function(b){
+      return '<div style="font-size:12px; margin-bottom:5px; color:var(--soft);"><b>'+b.nm+'</b> — '+b.date+' ('+b.st+') <span style="color:var(--blue);">TRID: '+b.trid+'</span></div>';
+    }).join('');
+  } else {
+    alert.style.display = 'none';
+    count.style.display = 'none';
+  }
+}
+
+function renderOnline(){
+  var h='';
+  var pend = allBks.filter(function(b){return b.status==='waiting_approval'||b.status==='pending';});
+
+  if(!pend.length){h='<tr><td colspan="8" class="empty">No pending online bookings</td></tr>';}
+  else {
+    pend.forEach(function(b){
+      h+='<tr><td>'+b.date+'</td><td>'+b.nm+'</td><td>'+b.ph+'</td><td>'+b.st+'</td><td>'+b.hrs+'</td><td>'+Rs(b.advAmt)+'</td><td><b style="color:var(--blue);">'+b.trid+'</b></td>';
+      h+='<td><button class="btn-sm" style="background:var(--green);color:#000;border:none;padding:4px 8px;" onclick="verifyOnline(\''+b.id+'\', true)">Approve</button> <button class="btn-sm" style="background:var(--red);color:#fff;border:none;padding:4px 8px;" onclick="verifyOnline(\''+b.id+'\', false)">Reject</button></td></tr>';
+    });
+  }
+  document.getElementById('onlineTbl').innerHTML=h;
+}
+
+async function verifyOnline(id, approve){
+  if(!confirm(approve?'Verify TRID and approve booking?':'Reject this booking?')) return;
+  try {
+    if(approve){
+      await db.collection('bookings').doc(id).update({status:'pre'});
+      toast('Booking Approved! ✅');
+    } else {
+      await db.collection('bookings').doc(id).update({status:'rejected'});
+      toast('Booking Rejected ❌','err');
+    }
+  } catch(e){ toast('Error: '+e.message,'err'); }
 }
 
 // TIMER
