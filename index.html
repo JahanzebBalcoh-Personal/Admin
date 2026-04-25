@@ -512,7 +512,15 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   </div>
 </div>
 
-<div class="footer">
+<!-- REAL-TIME ALARM ALERT -->
+<div id="alarmAlert" style="display:none; position:fixed; top:20px; left:50%; transform:translateX(-50%); width:90%; max-width:400px; background:linear-gradient(135deg, #ef4444, #b91c1c); color:white; z-index:11000; padding:20px; border-radius:15px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.5); animation: badgePulse 1s infinite;">
+  <div style="font-size:40px; margin-bottom:10px;">🚨</div>
+  <div style="font-family:'Bebas Neue',sans-serif; font-size:24px; letter-spacing:2px; margin-bottom:5px;">NEW ONLINE BOOKING!</div>
+  <div id="alarmMsg" style="font-size:14px; font-weight:700; margin-bottom:20px; opacity:0.9;">A customer just booked a slot online.</div>
+  <button onclick="stopAlarm()" style="background:white; color:#b91c1c; border:none; padding:10px 20px; border-radius:8px; font-weight:900; font-family:'Nunito',sans-serif; cursor:pointer; width:100%;">OK, I'LL CHECK</button>
+</div>
+
+<div class="app-wrap">
   <div class="fc">Jahanzeb Baloch — <a href="tel:03060711529">0306-0711529</a> | Sultans Indoor Cricket Club, Multan</div>
 </div>
 <div class="toast" id="toast"></div>
@@ -556,11 +564,46 @@ function waDue(b){return 'Assalam o Alaikum '+b.nm+'!\nThe Sultans Indoor Cricke
 function ptm(t){if(!t)return 0;var m=t.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(!m)return 0;var h=parseInt(m[1]),mn=parseInt(m[2]||0),ap=(m[3]||'').toUpperCase();if(ap==='PM'&&h<12)h+=12;if(ap==='AM'&&h===12)h=0;if(!ap&&h<8)h+=12;return h*60+mn;}
 function mtt(mins){var t=mins%1440,h24=Math.floor(t/60),m=t%60,ap=h24>=12?'PM':'AM',h12=h24>12?h24-12:h24===0?12:h24;return h12+':'+(m<10?'0':'')+m+' '+ap;}
 function fcd(s){var sec=Math.floor(s),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),sc=sec%60;if(h>0)return h+'h '+pad(m)+'m '+pad(sc)+'s';return pad(m)+':'+pad(sc);}
+function viewSS(url){ if(!url) return; window.open(url, '_blank'); }
+
+// ─── ALARM SYSTEM ───
+var sirenAudio = null;
+function startAlarmListener() {
+    db.collection('alerts').onSnapshot(function(snap) {
+        snap.docChanges().forEach(function(ch) {
+            if (ch.type === 'added') {
+                var data = ch.doc.data();
+                var now = new Date().getTime();
+                var at = new Date(data.at).getTime();
+                if (now - at < 60000) { // Only if alert is within last 1 minute
+                    playSiren(data.txt);
+                }
+            }
+        });
+    });
+}
+function playSiren(msg) {
+    var m = document.getElementById('alarmMsg'); if(m) m.textContent = msg || 'New Online Booking!';
+    var a = document.getElementById('alarmAlert'); if(a) a.style.display = 'block';
+    if (!sirenAudio) {
+        sirenAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2816/2816-preview.mp3');
+        sirenAudio.loop = true;
+    }
+    sirenAudio.play().catch(function(e) { console.log("Sound blocked:", e); });
+}
+function stopAlarm() {
+    var a = document.getElementById('alarmAlert'); if(a) a.style.display = 'none';
+    if (sirenAudio) {
+        sirenAudio.pause();
+        sirenAudio.currentTime = 0;
+    }
+}
 
 // FIREBASE
 function startSync(){
   try{
     document.getElementById('sdot').style.background='var(--orange)';
+    startAlarmListener();
   }catch(e){}
   db.collection('bookings').onSnapshot(function(snap){
     allBks=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.createdAt||b.date||'').localeCompare(a.createdAt||a.date||'');});
