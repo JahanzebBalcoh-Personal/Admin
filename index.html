@@ -563,7 +563,7 @@ function waDue(b){return 'Assalam o Alaikum '+b.nm+'!\nSultans Indoor Cricket Cl
 function ptm(t){if(!t)return 0;var m=t.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(!m)return 0;var h=parseInt(m[1]),mn=parseInt(m[2]||0),ap=(m[3]||'').toUpperCase();if(ap==='PM'&&h<12)h+=12;if(ap==='AM'&&h===12)h=0;if(!ap&&h<8)h+=12;return h*60+mn;}
 function mtt(mins){var t=mins%1440,h24=Math.floor(t/60),m=t%60,ap=h24>=12?'PM':'AM',h12=h24>12?h24-12:h24===0?12:h24;return h12+':'+(m<10?'0':'')+m+' '+ap;}
 function fcd(s){var sec=Math.floor(s),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),sc=sec%60;if(h>0)return h+'h '+pad(m)+'m '+pad(sc)+'s';return pad(m)+':'+pad(sc);}
-function viewSS(url){ if(!url) return; window.open(url, '_blank'); }
+function viewSS(url){ if(!url){ toast('No screenshot found!','err'); return; } window.open(url, '_blank'); }
 
 // ─── ALARM SYSTEM ───
 var sirenAudio = null;
@@ -715,12 +715,26 @@ function renderOnline(){
   if(!pend.length){h='<tr><td colspan="8" class="empty">No pending online bookings</td></tr>';}
   else {
     pend.forEach(function(b){
-      h+='<tr><td>'+b.date+'</td><td>'+b.nm+'</td><td>'+b.ph+'</td><td>'+b.st+'</td><td>'+b.hrs+'</td><td>'+Rs(b.advAmt)+'</td><td><b style="color:var(--blue);">'+(b.trid || '—')+'</b></td>';
-      h+='<td style="display:flex; gap:8px; align-items:center;">';
-      h+='<button class="btn-sm" style="background:var(--green); color:#000; border:none; padding:5px 12px;" onclick="verifyOnline(\''+b.id+'\', true)">Approve</button> ';
-      if(b.screenshot){ h+='<img src="'+b.screenshot+'" onclick="viewSS(\''+b.screenshot+'\')" style="width:40px; height:40px; object-fit:cover; border-radius:8px; cursor:pointer; border:1.5px solid var(--gold);">'; }
-      else { h+='<span style="font-size:9px; color:var(--muted);">No SS</span>'; }
-      h+='<button class="btn-sm" style="background:var(--red); color:#fff; border:none; padding:5px 12px;" onclick="verifyOnline(\''+b.id+'\', false)">Reject</button></td></tr>';
+      h+='<tr style="background:rgba(240,180,41,0.02);">'+
+          '<td>'+b.date+'</td>'+
+          '<td><b>'+b.nm+'</b><br><small style="color:var(--blue);">'+b.ph+'</small></td>'+
+          '<td>'+b.st+'<br><small>'+b.hrs+'hr Match</small></td>'+
+          '<td style="color:var(--gold);font-weight:800;">'+Rs(b.fin || b.totalAmt)+'</td>'+
+          '<td style="color:var(--green);font-weight:800;">'+Rs(b.advAmt)+'</td>'+
+          '<td style="color:var(--blue);font-weight:900;">'+(b.trid || '—')+'</td>';
+      h+='<td style="display:flex; gap:12px; align-items:center;">';
+      h+='<div style="display:flex; flex-direction:column; gap:4px;">'+
+          '<button class="btn-sm" style="background:var(--green); color:#000; border:none; padding:6px 12px; font-weight:900; border-radius:6px;" onclick="verifyOnline(\''+b.id+'\', true)">Approve ✅</button> '+
+          '<button class="btn-sm" style="background:var(--red); color:#fff; border:none; padding:4px 10px; font-size:10px; border-radius:6px;" onclick="verifyOnline(\''+b.id+'\', false)">Reject ❌</button>'+
+         '</div>';
+      if(b.screenshot){ 
+        h+='<div style="position:relative;cursor:pointer;" onclick="viewSS(\''+b.screenshot+'\')">'+
+            '<img src="'+b.screenshot+'" style="width:60px; height:60px; object-fit:cover; border-radius:10px; border:2px solid var(--gold); shadow:0 4px 10px rgba(0,0,0,0.3);">'+
+            '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(240,180,41,0.9);color:#000;font-size:7px;font-weight:900;text-align:center;padding:1px;border-radius:0 0 8px 8px;">VIEW</div>'+
+           '</div>'; 
+      }
+      else { h+='<div style="width:60px;height:60px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);border-radius:10px;border:1px dashed var(--muted);font-size:8px;color:var(--muted);text-align:center;">NO SS</div>'; }
+      h+='</td></tr>';
     });
   }
   document.getElementById('onlineTbl').innerHTML=h;
@@ -1073,7 +1087,7 @@ async function archiveAndReset(){
   }
 }
 
-function viewSS(url){ if(!url) return; window.open(url, '_blank'); }
+function viewSS(url){ if(!url){ toast('No screenshot found!','err'); return; } window.open(url, '_blank'); }
 
 var sirenAudio = null;
 function startAlarmListener() {
