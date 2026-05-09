@@ -331,10 +331,10 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <br>
   <div class="sh"><div class="sh-t">🌐 Online Booking Requests</div></div>
   <div style="background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.2); border-radius:12px; padding:12px; margin-bottom:15px; font-size:12px; color:var(--soft);">
-    Customers ne website se booking ki hai. TRID check karein aur confirm karein.
+    Customers ne website se booking ki hai. Screenshot check karein aur confirm karein.
   </div>
   <div class="tw"><table>
-    <thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Time</th><th>Hrs</th><th>Advance</th><th>TRID</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Time</th><th>Hrs</th><th>Advance</th><th>Actions</th></tr></thead>
     <tbody id="onlineTbl"></tbody>
   </table></div>
 </div>
@@ -618,7 +618,7 @@ function startSync(){
         else if(d.status==='paid'){txt='Complete: '+d.nm+' — '+Rs(d.fin)+' PAID';color='var(--green)';}
         else if(d.status==='partial'){txt='Partial: '+d.nm+' — Due: '+Rs(d.due);color='var(--gold)';}
         else if(d.status==='waiting_approval'||d.status==='pending'){
-            txt='🌐 Online Request: '+d.nm+' (TRID: '+d.trid+')';
+            txt='🌐 Online Request: '+d.nm;
             color='var(--blue)';
             // Sound and Toast for new online requests
             if(isNew) {
@@ -691,7 +691,7 @@ function renderOnlineAlert(){
         '<div style="font-size:12px;">'+
           '<div style="font-weight:800; color:var(--text);">'+b.nm+'</div>'+
           '<div style="color:var(--soft); font-size:10px;">'+b.date+' • '+b.st+'</div>'+
-          '<div style="color:var(--blue); font-weight:700; font-size:10px;">TRID: '+(b.trid || '—')+'</div>'+
+
         '</div>'+
         '<div style="display:flex; gap:8px; align-items:center;">'+
            (b.screenshot ? '<img src="'+b.screenshot+'" onclick="viewSS(\''+b.screenshot+'\')" style="width:36px; height:36px; object-fit:cover; border-radius:6px; cursor:pointer; border:1.5px solid var(--gold); shadow:0 0 10px rgba(0,0,0,0.3);">' : '')+
@@ -721,7 +721,7 @@ function renderOnline(){
           '<td>'+b.st+'<br><small>'+b.hrs+'hr Match</small></td>'+
           '<td style="color:var(--gold);font-weight:800;">'+Rs(b.fin || b.totalAmt)+'</td>'+
           '<td style="color:var(--green);font-weight:800;">'+Rs(b.advAmt)+'</td>'+
-          '<td style="color:var(--blue);font-weight:900;">'+(b.trid || '—')+'</td>';
+
       h+='<td style="display:flex; gap:12px; align-items:center;">';
       h+='<div style="display:flex; flex-direction:column; gap:4px;">'+
           '<button class="btn-sm" style="background:var(--green); color:#000; border:none; padding:6px 12px; font-weight:900; border-radius:6px;" onclick="verifyOnline(\''+b.id+'\', true)">Approve ✅</button> '+
@@ -741,7 +741,7 @@ function renderOnline(){
 }
 
 async function verifyOnline(id, approve){
-  if(!confirm(approve?'Verify TRID and approve booking?':'Reject this booking?')) return;
+  if(!confirm(approve?'Verify screenshot and approve booking?':'Reject this booking?')) return;
   try {
     if(approve){
       var b=allBks.find(function(x){return x.id===id;});
