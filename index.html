@@ -7,10 +7,10 @@
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Sultans Admin">
-<meta name="description" content="Admin Panel for Sultans Indoor Cricket Club.">
+<meta name="apple-mobile-web-app-title" content="SCC Admin">
+<meta name="description" content="Admin Panel for SCC — Sultans Indoor Cricket Club, Multan.">
 <meta name="theme-color" content="#f0b429">
-<title>Jahanzeb Admin — Sultans</title>
+<title>SCC Admin | Jahanzeb Baloch</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -143,7 +143,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <div class="hdr-logo" style="width:100px; height:100px; margin-bottom:20px; box-shadow:0 0 20px rgba(240,180,41,0.3);">
     <img src="icon.jpg" alt="Jahanzeb">
   </div>
-  <div class="hdr-name" style="font-size:32px;">THE SULTANS CLUB</div>
+  <div class="hdr-name" style="font-size:32px;">SCC ADMIN</div>
   <div style="color:var(--gold);margin-top:20px;font-weight:bold;letter-spacing:2px;font-size:12px;">LOADING ADMIN...</div>
 </div>
 
@@ -216,9 +216,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     <div class="hdr-brand">
       <div class="hdr-logo"><img src="icon.jpg" alt="Jahanzeb"></div>
       <div>
-        <div class="hdr-name">JAHANZEB BALOCH — ADMIN</div>
-
-        <div class="hdr-sub">Sultans Indoor Cricket Club, Multan</div>
+        <div class="hdr-name">SCC ADMIN</div>
+        <div class="hdr-sub">📍 MA Jinnah Road, Qasoori Chowk, Multan | System by Jahanzeb Baloch</div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -560,7 +559,7 @@ function sbadge(s){if(s==='paid')return '<span class="bx bx-g">✅ PAID</span>';
 
 function vbadge(v){if(v==='vip')return '<span class="bx bx-y">VIP</span>';if(v==='new')return '<span class="bx bx-b">NEW</span>';return '<span class="bx bx-t">Regular</span>';}
 function waLink(ph,msg){var p=ph.replace(/[^0-9]/g,'');var i=p.startsWith('0')?'92'+p.slice(1):p;return 'https://wa.me/'+i+'?text='+encodeURIComponent(msg);}
-function waDue(b){return 'Assalam o Alaikum '+b.nm+'!\nThe Sultans Indoor Cricket Club — Multan\n\nYour payment is pending:\nDate: '+b.date+'\nTotal: '+Rs(b.fin)+'\nDue: '+Rs(b.due)+'\n\nJazzCash: 0300-3510175 (Abdul Gaffar)\nBank Alfalah: 83721010111101\n\nThank you!';}
+function waDue(b){return 'Assalam o Alaikum '+b.nm+'!\nSultans Indoor Cricket Club - Multan\n\nYour payment is pending:\nDate: '+b.date+'\nTotal: '+Rs(b.fin)+'\nDue: '+Rs(b.due)+'\n\nJazzCash: 0300-3510175 (Abdul Gaffar)\nBank Alfalah: 83721010111101\n\nThank you!';}
 function ptm(t){if(!t)return 0;var m=t.match(/(\d+):(\d+)\s*(AM|PM)?/i);if(!m)return 0;var h=parseInt(m[1]),mn=parseInt(m[2]||0),ap=(m[3]||'').toUpperCase();if(ap==='PM'&&h<12)h+=12;if(ap==='AM'&&h===12)h=0;if(!ap&&h<8)h+=12;return h*60+mn;}
 function mtt(mins){var t=mins%1440,h24=Math.floor(t/60),m=t%60,ap=h24>=12?'PM':'AM',h12=h24>12?h24-12:h24===0?12:h24;return h12+':'+(m<10?'0':'')+m+' '+ap;}
 function fcd(s){var sec=Math.floor(s),h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),sc=sec%60;if(h>0)return h+'h '+pad(m)+'m '+pad(sc)+'s';return pad(m)+':'+pad(sc);}
@@ -890,7 +889,7 @@ function printDaily(){
   var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Daily '+td+'</title>';
   h+='<style>body{font-family:Arial;padding:20px;font-size:11px;}h1{color:#e07b00;font-size:18px;border-bottom:2px solid #e07b00;padding-bottom:8px;margin-bottom:14px;}h2{font-size:13px;margin:14px 0 8px;}.boxes{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}.box{padding:10px 14px;border:2px solid #ddd;border-radius:8px;text-align:center;flex:1;min-width:80px;}.bv{font-size:15px;font-weight:bold;display:block;}.bl{font-size:9px;color:#888;}.g{border-color:#22c55e;color:#22c55e;}.r{border-color:#ef4444;color:#ef4444;}.y{border-color:#e07b00;color:#e07b00;}.b{border-color:#3b82f6;color:#3b82f6;}table{width:100%;border-collapse:collapse;margin-bottom:12px;}th{background:#060e1a;color:#f0b429;padding:6px;text-align:left;font-size:9px;}td{padding:6px;border-bottom:1px solid #e2e8f0;font-size:10px;}tr:nth-child(even){background:#f8fafc;}.footer{text-align:center;font-size:9px;color:#888;border-top:1px solid #ddd;padding-top:10px;margin-top:14px;}@media print{button{display:none;}@page{margin:8mm;}}</style></head><body>';
   h+='<button onclick="window.print()" style="background:#e07b00;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;width:100%;font-size:13px;margin-bottom:14px;">Print / Save PDF</button>';
-  h+='<h1>THE SULTANS - Daily Report ('+td+')</h1>';
+  h+='<h1>SCC ADMIN - Daily Report ('+td+')</h1>';
   h+='<div class="boxes"><div class="box g"><span class="bv">Rs.'+inc.toLocaleString()+'</span><span class="bl">Earning</span></div><div class="box r"><span class="bv">Rs.'+exp.toLocaleString()+'</span><span class="bl">Expense</span></div><div class="box y"><span class="bv">Rs.'+(inc-exp).toLocaleString()+'</span><span class="bl">'+(inc-exp>=0?'Profit':'Loss')+'</span></div><div class="box b"><span class="bv">'+bks.length+'</span><span class="bl">Bookings</span></div></div>';
   h+='<h2>Bookings</h2><table><thead><tr><th>Time</th><th>Name</th><th>Phone</th><th>Total</th><th>Advance</th><th>Method</th><th>Cash</th><th>Account</th><th>Paid</th><th>Due</th><th>Status</th></tr></thead><tbody>'+bkRows+'</tbody></table>';
   h+='<h2>Expenses</h2><table><thead><tr><th>Category</th><th>Details</th><th>Via</th><th>Amount</th></tr></thead><tbody>'+expRows+'</tbody></table>';
@@ -913,11 +912,11 @@ function printMonthly(){
   var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+mn+' '+year+'</title>';
   h+='<style>body{font-family:Arial;padding:20px;font-size:11px;}h1{color:#e07b00;font-size:18px;border-bottom:2px solid #e07b00;padding-bottom:8px;margin-bottom:14px;}h2{font-size:13px;margin:14px 0 8px;}.boxes{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}.box{padding:10px 14px;border:2px solid #ddd;border-radius:8px;text-align:center;flex:1;min-width:80px;}.bv{font-size:14px;font-weight:bold;display:block;}.bl{font-size:9px;color:#888;}.g{border-color:#22c55e;color:#22c55e;}.r{border-color:#ef4444;color:#ef4444;}.y{border-color:#e07b00;color:#e07b00;}.b{border-color:#3b82f6;color:#3b82f6;}table{width:100%;border-collapse:collapse;margin-bottom:12px;}th{background:#060e1a;color:#f0b429;padding:5px;text-align:left;font-size:9px;}td{padding:5px;border-bottom:1px solid #e2e8f0;font-size:10px;}tr:nth-child(even){background:#f8fafc;}.footer{text-align:center;font-size:9px;color:#888;border-top:1px solid #ddd;padding-top:10px;margin-top:14px;}@media print{button{display:none;}@page{margin:8mm;size:A4 landscape;}}</style></head><body>';
   h+='<button onclick="window.print()" style="background:#e07b00;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;width:100%;font-size:13px;margin-bottom:14px;">Print / Save PDF</button>';
-  h+='<h1>THE SULTANS - '+mn+' '+year+'</h1>';
+  h+='<h1>SCC ADMIN - '+mn+' '+year+'</h1>';
   h+='<div class="boxes"><div class="box g"><span class="bv">Rs.'+tInc.toLocaleString()+'</span><span class="bl">Earning</span></div><div class="box r"><span class="bv">Rs.'+tExp.toLocaleString()+'</span><span class="bl">Expense</span></div><div class="box y"><span class="bv">Rs.'+(tInc-tExp).toLocaleString()+'</span><span class="bl">'+(tInc-tExp>=0?'Profit':'Loss')+'</span></div><div class="box b"><span class="bv">'+bks.length+'</span><span class="bl">Bookings</span></div></div>';
   h+='<h2>All Bookings</h2><table><thead><tr><th>Date</th><th>Name</th><th>Phone</th><th>Time</th><th>Total</th><th>Advance</th><th>Method</th><th>Cash</th><th>Account</th><th>Paid</th><th>Due</th><th>Status</th></tr></thead><tbody>'+bkRows+'</tbody></table>';
   h+='<h2>All Expenses</h2><table><thead><tr><th>Date</th><th>Category</th><th>Details</th><th>Via</th><th>Amount</th></tr></thead><tbody>'+expRows+'</tbody></table>';
-  h+='<div class="footer"><p><b>Jahanzeb Baloch - 0306-0711529 | The Sultans Indoor Cricket Club, Multan</b></p></div>';
+  h+='<div class="footer"><p><b>Near Menssion Marriage Club, MA Jinnah Road, Qasoori Chowk Kumharan Wala, Multan</b></p><p>System by Jahanzeb Baloch - 0306-0711529</p></div>';
   h+='</body></html>';
   w.document.write(h);w.document.close();
 }
