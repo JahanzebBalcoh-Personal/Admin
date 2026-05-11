@@ -558,6 +558,19 @@ function viewSS(url){ if(!url){ toast('No screenshot found!','err'); return; } w
 
 // ─── ALARM SYSTEM ───
 var sirenAudio = null;
+function showNotification(title, options) {
+    if ("serviceWorker" in navigator && Notification.permission === "granted") {
+        navigator.serviceWorker.ready.then(function(reg) {
+            reg.showNotification(title, options);
+        }).catch(function(err) {
+            console.error("SW Notification failed, falling back:", err);
+            new Notification(title, options);
+        });
+    } else if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(title, options);
+    }
+}
+
 function startAlarmListener() {
     // Request permission
     if ("Notification" in window && Notification.permission !== "granted") {
@@ -573,29 +586,17 @@ function startAlarmListener() {
                 if (now - at < 60000) { // Only if alert is within last 1 minute
                     playSiren(data.txt);
                     
-    // Browser Notification
-    if ("Notification" in window) {
-        if (Notification.permission === "granted") {
-            showNotification("🚨 EMERGENCY ALERT", {
-                body: data.txt,
-                icon: "icon.jpg",
-                requireInteraction: true
-            });
-        }
-    }
-}
-function showNotification(title, options) {
-    if ("serviceWorker" in navigator && Notification.permission === "granted") {
-        navigator.serviceWorker.ready.then(function(reg) {
-            reg.showNotification(title, options);
-        }).catch(function(err) {
-            console.error("SW Notification failed, falling back:", err);
-            new Notification(title, options);
-        });
-    } else if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(title, options);
-    }
-}
+                    // Browser Notification
+                    if ("Notification" in window) {
+                        if (Notification.permission === "granted") {
+                            showNotification("🚨 EMERGENCY ALERT", {
+                                body: data.txt,
+                                icon: "icon.jpg",
+                                requireInteraction: true
+                            });
+                        }
+                    }
+                }
             }
         });
     });
