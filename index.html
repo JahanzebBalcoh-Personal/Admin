@@ -573,15 +573,29 @@ function startAlarmListener() {
                 if (now - at < 60000) { // Only if alert is within last 1 minute
                     playSiren(data.txt);
                     
-                    // Browser Notification
-                    if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification("🚨 EMERGENCY ALERT", {
-                            body: data.txt,
-                            icon: "icon.jpg",
-                            requireInteraction: true
-                        });
-                    }
-                }
+    // Browser Notification
+    if ("Notification" in window) {
+        if (Notification.permission === "granted") {
+            showNotification("🚨 EMERGENCY ALERT", {
+                body: data.txt,
+                icon: "icon.jpg",
+                requireInteraction: true
+            });
+        }
+    }
+}
+function showNotification(title, options) {
+    if ("serviceWorker" in navigator && Notification.permission === "granted") {
+        navigator.serviceWorker.ready.then(function(reg) {
+            reg.showNotification(title, options);
+        }).catch(function(err) {
+            console.error("SW Notification failed, falling back:", err);
+            new Notification(title, options);
+        });
+    } else if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(title, options);
+    }
+}
             }
         });
     });
@@ -605,10 +619,16 @@ function stopAlarm() {
 
 // FIREBASE
 function startSync(){
-  try{
-    document.getElementById('sdot').style.background='var(--orange)';
-    startAlarmListener();
-  }catch(e){}
+    try{
+        document.getElementById('sdot').style.background='var(--orange)';
+        startAlarmListener();
+        // Permission trigger on first click anywhere
+        document.addEventListener('click', function() {
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+        }, {once: true});
+    }catch(e){}
   db.collection('bookings').onSnapshot(function(snap){
     allBks=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.createdAt||b.date||'').localeCompare(a.createdAt||a.date||'');});
     document.getElementById('sdot').style.background='var(--green)';
@@ -631,7 +651,7 @@ function startSync(){
                 
                 // Browser Notification
                 if ("Notification" in window && Notification.permission === "granted") {
-                    new Notification("New Online Booking Request! 🏏", {
+                    showNotification("New Online Booking Request! 🏏", {
                         body: d.nm + " has requested a slot for " + (d.st || "unknown time"),
                         icon: "icon.jpg"
                     });
