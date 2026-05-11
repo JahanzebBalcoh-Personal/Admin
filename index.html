@@ -160,21 +160,12 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
       <div class="fl"><label>Type</label>
         <select id="e-vip"><option value="regular">Regular</option><option value="vip">VIP</option><option value="new">New</option></select>
       </div>
-      <div class="fl"><label>Hours</label><input type="number" id="e-hrs" min="0.5" step="0.5"></div>
+      <div class="fl"><label>Hours (Manual)</label><input type="number" id="e-hrs" min="0.5" step="0.1" placeholder="e.g. 1.5, 2, 4"></div>
       <div class="fl"><label>Date</label><input type="date" id="e-date"></div>
     </div>
     <div class="fl"><label>Time</label>
       <div style="display:flex;gap:6px;">
-        <select id="e-hr" style="background:var(--card2);border:1.5px solid rgba(255,255,255,0.06);border-radius:9px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;flex:1;">
-          <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option>
-          <option>7</option><option>8</option><option>9</option><option>10</option><option>11</option><option>12</option>
-        </select>
-        <select id="e-mn" style="background:var(--card2);border:1.5px solid rgba(255,255,255,0.06);border-radius:9px;padding:9px;color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;width:72px;">
-          <option value="00">:00</option><option value="15">:15</option><option value="30">:30</option><option value="45">:45</option>
-        </select>
-        <select id="e-ap" style="background:var(--card2);border:1.5px solid rgba(255,255,255,0.06);border-radius:9px;padding:9px;color:var(--gold);font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;outline:none;width:72px;">
-          <option value="AM">AM</option><option value="PM">PM</option>
-        </select>
+        <input type="time" id="e-startTime" style="background:var(--card2);border:1.5px solid rgba(255,255,255,0.06);border-radius:9px;padding:12px;color:var(--text);font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;outline:none;width:100%;color:var(--gold);">
       </div>
     </div>
     <div class="fl"><label>Note</label><input type="text" id="e-nt"></div>
@@ -874,9 +865,64 @@ function renderNotes(){var notes=JSON.parse(localStorage.getItem('jb_notes')||'[
 function delNote(i){var n=JSON.parse(localStorage.getItem('jb_notes')||'[]');n.splice(i,1);localStorage.setItem('jb_notes',JSON.stringify(n));renderNotes();}
 
 // EDIT
-function openEdit(id){editId=id;var b=allBks.find(function(x){return x.id===id;});if(!b)return;document.getElementById('e-nm').value=b.nm||'';document.getElementById('e-ph').value=b.ph||'';document.getElementById('e-vip').value=b.vip||'regular';document.getElementById('e-hrs').value=b.hrs||'';document.getElementById('e-date').value=b.date||'';document.getElementById('e-nt').value=b.nt||'';var m=(b.st||'6:00 PM').match(/(\d+):(\d+)\s*(AM|PM)?/i);if(m){document.getElementById('e-hr').value=m[1];document.getElementById('e-mn').value=pad(m[2]);document.getElementById('e-ap').value=(m[3]||'PM').toUpperCase();}document.getElementById('edit-info').innerHTML='<b>'+b.nm+'</b> — '+b.date+' — '+Rs(b.fin)+' — '+sbadge(b.status);document.getElementById('editModal').classList.add('on');}
+function openEdit(id){
+  editId=id;
+  var b=allBks.find(function(x){return x.id===id;});
+  if(!b)return;
+  document.getElementById('e-nm').value=b.nm||'';
+  document.getElementById('e-ph').value=b.ph||'';
+  document.getElementById('e-vip').value=b.vip||'regular';
+  document.getElementById('e-hrs').value=b.hrs||'';
+  document.getElementById('e-date').value=b.date||'';
+  document.getElementById('e-nt').value=b.nt||'';
+
+  // Parse time for HTML time input
+  var t=b.st||'06:00 PM';
+  var match=t.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if(match){
+    var h=parseInt(match[1]);
+    var mn=match[2];
+    var ap=(match[3]||'PM').toUpperCase();
+    if(ap==='PM'&&h<12)h+=12;
+    if(ap==='AM'&&h===12)h=0;
+    document.getElementById('e-startTime').value=pad(h)+':'+mn;
+  }
+  
+  document.getElementById('edit-info').innerHTML='<b>'+b.nm+'</b> — '+b.date+' — '+Rs(b.fin)+' — '+sbadge(b.status);
+  document.getElementById('editModal').classList.add('on');
+}
 function closeEdit(){document.getElementById('editModal').classList.remove('on');editId=null;}
-async function saveEdit(){if(!editId)return;var nm=document.getElementById('e-nm').value.trim();if(!nm){toast('Name required!','err');return;}var ph=document.getElementById('e-ph').value.trim(),vip=document.getElementById('e-vip').value,hrs=parseFloat(document.getElementById('e-hrs').value)||0,date=document.getElementById('e-date').value,nt=document.getElementById('e-nt').value.trim(),st=document.getElementById('e-hr').value+':'+document.getElementById('e-mn').value+' '+document.getElementById('e-ap').value;var b=allBks.find(function(x){return x.id===editId;});var upd={nm:nm,ph:ph,vip:vip,nt:nt,st:st,date:date};if(hrs>0&&b&&hrs!==b.hrs){upd.hrs=hrs;var nf=Math.max(0,Math.round(hrs*2000)+(b.exA||0)-(b.dA||0));upd.fin=nf;upd.due=Math.max(0,nf-(b.totalPaid||0));}try{await db.collection('bookings').doc(editId).update(upd);closeEdit();toast('Updated!','ok');}catch(e){toast('Error: '+e.message,'err');}}
+async function saveEdit(){
+  if(!editId)return;
+  var nm=document.getElementById('e-nm').value.trim();
+  if(!nm){toast('Name required!','err');return;}
+  var ph=document.getElementById('e-ph').value.trim(),
+      vip=document.getElementById('e-vip').value,
+      hrs=parseFloat(document.getElementById('e-hrs').value)||0,
+      date=document.getElementById('e-date').value,
+      nt=document.getElementById('e-nt').value.trim(),
+      timeVal=document.getElementById('e-startTime').value;
+  
+  var st = '';
+  if(timeVal){
+    var parts=timeVal.split(':');
+    var h=parseInt(parts[0]);
+    var m=parts[1];
+    var ap=h>=12?'PM':'AM';
+    var h12=h%12||12;
+    st=pad(h12)+':'+m+' '+ap;
+  }
+
+  var b=allBks.find(function(x){return x.id===editId;});
+  var upd={nm:nm,ph:ph,vip:vip,nt:nt,st:st,date:date};
+  if(hrs>0&&b&&hrs!==b.hrs){
+    upd.hrs=hrs;
+    var nf=Math.max(0,Math.round(hrs*2000)+(b.exA||0)-(b.dA||0));
+    upd.fin=nf;
+    upd.due=Math.max(0,nf-(b.totalPaid||0));
+  }
+  try{await db.collection('bookings').doc(editId).update(upd);closeEdit();toast('Updated!','ok');}catch(e){toast('Error: '+e.message,'err');}
+}
 
 // PAY
 function openPay(id){payId=id;var b=allBks.find(function(x){return x.id===id;});if(!b)return;document.getElementById('p-cash').value='';document.getElementById('p-acc').value='';document.getElementById('p-type').value='';document.getElementById('pay-info').innerHTML='<b>'+b.nm+'</b> — Total: <b style="color:var(--gold);">'+Rs(b.fin)+'</b> — Paid: <span style="color:var(--green);">'+Rs(b.totalPaid||0)+'</span> — <b style="color:var(--purple);">Due: '+Rs(b.due)+'</b>';calcPay();document.getElementById('payModal').classList.add('on');}
