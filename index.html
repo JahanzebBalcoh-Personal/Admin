@@ -559,6 +559,11 @@ function viewSS(url){ if(!url){ toast('No screenshot found!','err'); return; } w
 // ─── ALARM SYSTEM ───
 var sirenAudio = null;
 function startAlarmListener() {
+    // Request permission
+    if ("Notification" in window && Notification.permission !== "granted") {
+        Notification.requestPermission();
+    }
+
     db.collection('alerts').onSnapshot(function(snap) {
         snap.docChanges().forEach(function(ch) {
             if (ch.type === 'added') {
@@ -567,6 +572,15 @@ function startAlarmListener() {
                 var at = new Date(data.at).getTime();
                 if (now - at < 60000) { // Only if alert is within last 1 minute
                     playSiren(data.txt);
+                    
+                    // Browser Notification
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        new Notification("🚨 EMERGENCY ALERT", {
+                            body: data.txt,
+                            icon: "icon.jpg",
+                            requireInteraction: true
+                        });
+                    }
                 }
             }
         });
@@ -614,6 +628,15 @@ function startSync(){
             // Sound and Toast for new online requests
             if(isNew) {
                 toast('New Online Booking Request! 🔔', 'info');
+                
+                // Browser Notification
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("New Online Booking Request! 🏏", {
+                        body: d.nm + " has requested a slot for " + (d.st || "unknown time"),
+                        icon: "icon.jpg"
+                    });
+                }
+
                 try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
             }
         }
@@ -1149,39 +1172,7 @@ function viewSS(url){
     modal.style.display = 'flex';
 }
 
-var sirenAudio = null;
-function startAlarmListener() {
-    db.collection('alerts').onSnapshot(function(snap) {
-        snap.docChanges().forEach(function(ch) {
-            if (ch.type === 'added') {
-                var data = ch.doc.data();
-                var now = new Date().getTime();
-                var at = new Date(data.at).getTime();
-                if (now - at < 60000) { 
-                    playSiren(data.txt);
-                }
-            }
-        });
-    });
-}
-
-function playSiren(msg) {
-    document.getElementById('alarmMsg').textContent = msg || 'Customer needs attention!';
-    document.getElementById('alarmAlert').style.display = 'block';
-    if (!sirenAudio) {
-        sirenAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2816/2816-preview.mp3');
-        sirenAudio.loop = true;
-    }
-    sirenAudio.play().catch(function(e){ console.log("Sound blocked:", e); });
-}
-
-function stopAlarm() {
-    document.getElementById('alarmAlert').style.display = 'none';
-    if (sirenAudio) {
-        sirenAudio.pause();
-        sirenAudio.currentTime = 0;
-    }
-}
+// (Duplicate startAlarmListener removed)
 
 async function delHistory(id) {
   if (!confirm('Are you sure?')) return;
