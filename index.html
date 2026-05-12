@@ -343,7 +343,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     <select id="by" onchange="renderBk()" style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;outline:none;"></select>
     <input type="date" id="bdf" onchange="renderBk()" style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;outline:none;">
     <select id="bsf" onchange="renderBk()" style="background:var(--card);border:1px solid var(--border);border-radius:7px;padding:7px 10px;color:var(--text);font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;outline:none;">
-      <option value="">All</option><option value="pre">Pre-Match</option><option value="paid">Paid</option><option value="partial">Partial</option>
+      <option value="">Active</option><option value="pre">Pre-Match</option><option value="paid">Paid</option><option value="partial">Partial</option><option value="deleted">🗑️ Deleted</option>
     </select>
     <button class="btn-sm" onclick="document.getElementById('bdf').value='';document.getElementById('bsf').value='';renderBk()">Reset</button>
   </div>
@@ -618,7 +618,14 @@ var Rs=function(n){return 'Rs.'+Number(n||0).toLocaleString('en-PK');};
 var today=function(){var d=new Date();var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;};
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast on '+(t||'ok');setTimeout(function(){el.className='toast';},3000);}
 function pmbadge(m){var mp={cash:'bx-g',bank:'bx-b',jazz:'bx-p',easy:'bx-t'};var ml={cash:'Cash',bank:'Alfalah',jazz:'Jazz',easy:'Easy'};return '<span class="bx '+(mp[m]||'bx-g')+'">'+(ml[m]||m||'—')+'</span>';}
-function sbadge(s){if(s==='paid')return '<span class="bx bx-g">✅ PAID</span>';if(s==='partial')return '<span class="bx bx-y">💛 PARTIAL</span>';if(s==='pre')return '<span class="bx bx-o">⏳ PRE</span>';if(s==='waiting_approval')return '<span class="bx bx-b">⏳ WAITING APPROVAL</span>';return '<span class="bx bx-r">❌ PENDING</span>';}
+function sbadge(s, isDeleted){
+  if(isDeleted) return '<span class="bx bx-r" style="background:rgba(0,0,0,0.4);border:1px dashed var(--red);">🗑️ DELETED</span>';
+  if(s==='paid')return '<span class="bx bx-g">✅ PAID</span>';
+  if(s==='partial')return '<span class="bx bx-y">💛 PARTIAL</span>';
+  if(s==='pre')return '<span class="bx bx-o">⏳ PRE</span>';
+  if(s==='waiting_approval')return '<span class="bx bx-b">⏳ WAITING APPROVAL</span>';
+  return '<span class="bx bx-r">❌ PENDING</span>';
+}
 
 function vbadge(v){if(v==='vip')return '<span class="bx bx-y">VIP</span>';if(v==='new')return '<span class="bx bx-b">NEW</span>';return '<span class="bx bx-t">Regular</span>';}
 function waLink(ph,msg){var p=ph.replace(/[^0-9]/g,'');var i=p.startsWith('0')?'92'+p.slice(1):p;return 'https://wa.me/'+i+'?text='+encodeURIComponent(msg);}
@@ -956,14 +963,48 @@ function renderDash(){
 function renderBk(q){
   var month=parseInt(document.getElementById('bm').value),year=parseInt(document.getElementById('by').value);
   var fd=document.getElementById('bdf').value,fs=document.getElementById('bsf').value,sq=q||'';
-  var bks=allBks.filter(function(b){var d=new Date(b.date);return d.getMonth()+1===month&&d.getFullYear()===year;});
+  var bks=allBks;
+  if(fs === 'deleted') {
+    bks = bks.filter(function(b){ return b.isDeleted === true; });
+  } else {
+    bks = bks.filter(function(b){ var d=new Date(b.date); return d.getMonth()+1===month&&d.getFullYear()===year && !b.isDeleted; });
+  }
+  
   if(fd)bks=bks.filter(function(b){return b.date===fd;});
-  if(fs)bks=bks.filter(function(b){return b.status===fs;});
+  if(fs && fs !== 'deleted')bks=bks.filter(function(b){return b.status===fs;});
   if(sq)bks=bks.filter(function(b){return b.nm.toLowerCase().includes(sq.toLowerCase())||b.ph.includes(sq);});
   var tInc=bks.reduce(function(s,b){return s+(parseFloat(b.totalPaid)||0);},0);
   var tDue=bks.reduce(function(s,b){return s+(parseFloat(b.due)||0);},0);
   document.getElementById('bkStats').innerHTML='<span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:800;color:var(--green);">'+bks.length+' bookings</span><span style="background:rgba(240,180,41,0.1);border:1px solid rgba(240,180,41,0.2);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:800;color:var(--gold);">Total: '+Rs(tInc)+'</span>'+(tDue>0?'<span style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:800;color:var(--red);">Due: '+Rs(tDue)+'</span>':'');
-  document.getElementById('bkTbl').innerHTML=!bks.length?'<tr><td colspan="14" class="empty">No bookings</td></tr>':bks.map(function(b){return '<tr><td style="font-size:10px;color:var(--muted);">'+b.date+'</td><td><b>'+b.nm+'</b></td><td style="color:var(--blue);font-size:11px;">'+(b.ph||'—')+'</td><td style="font-size:11px;">'+(b.st||'—')+'</td><td>'+(b.hrs||'')+'hr</td><td style="color:var(--gold);">'+Rs(b.fin || b.totalAmt)+'</td><td style="color:var(--orange);">'+Rs(b.advAmt)+'</td><td>'+pmbadge(b.advMode)+'</td><td style="color:var(--green);">'+Rs(b.afterCash||0)+'</td><td style="color:var(--blue);">'+Rs(b.afterAcc||0)+'</td><td style="color:var(--green);">'+Rs(b.totalPaid||0)+'</td><td style="color:'+((b.due||0)>0?'var(--red)':'var(--green)')+';">'+((b.due||0)>0?Rs(b.due):'OK')+'</td><td>'+sbadge(b.status)+'</td><td style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;"><button class="btn-edit" onclick="openEdit(\''+b.id+'\')">Edit</button>'+(b.screenshot?'<img src="'+b.screenshot+'" onclick="viewSS(\''+b.screenshot+'\')" style="width:28px;height:28px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid var(--gold);">':'')+( ((b.due||0)>0)?'<button class="btn-pay" onclick="openPay(\''+b.id+'\')">Pay</button>':'')+'<button class="btn-del" onclick="delBk(\''+b.id+'\')">Del</button></td></tr>';}).join('');
+  document.getElementById('bkTbl').innerHTML=!bks.length?'<tr><td colspan="14" class="empty">No bookings</td></tr>':bks.map(function(b){
+    var actions = '';
+    if(b.isDeleted) {
+      actions = '<button class="btn-sm" style="background:var(--green);color:#000;border:none;font-weight:800;font-size:9px;" onclick="restoreBk(\''+b.id+'\')">RESTORE</button>'+
+                '<button class="btn-del" style="background:var(--red);color:#fff;border:none;font-size:9px;" onclick="delBk(\''+b.id+'\', true)">PERM DEL</button>';
+    } else {
+      actions = '<button class="btn-edit" onclick="openEdit(\''+b.id+'\')">Edit</button>'+
+                (b.screenshot?'<img src="'+b.screenshot+'" onclick="viewSS(\''+b.screenshot+'\')" style="width:28px;height:28px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid var(--gold);">':'')+
+                ( ((b.due||0)>0)?'<button class="btn-pay" onclick="openPay(\''+b.id+'\')">Pay</button>':'')+
+                '<button class="btn-del" onclick="delBk(\''+b.id+'\')">Del</button>';
+    }
+
+    return '<tr style="'+(b.isDeleted?'opacity:0.6;background:rgba(239,68,68,0.05);':'')+'">'+
+      '<td style="font-size:10px;color:var(--muted);">'+b.date+'</td>'+
+      '<td><b>'+b.nm+'</b>'+(b.isDeleted?'<br><small style="color:var(--red);">Deleted by: '+b.deletedBy+'</small>':'')+'</td>'+
+      '<td style="color:var(--blue);font-size:11px;">'+(b.ph||'—')+'</td>'+
+      '<td style="font-size:11px;">'+(b.st||'—')+'</td>'+
+      '<td>'+(b.hrs||'')+'hr</td>'+
+      '<td style="color:var(--gold);">'+Rs(b.fin || b.totalAmt)+'</td>'+
+      '<td style="color:var(--orange);">'+Rs(b.advAmt)+'</td>'+
+      '<td>'+pmbadge(b.advMode)+'</td>'+
+      '<td style="color:var(--green);">'+Rs(b.afterCash||0)+'</td>'+
+      '<td style="color:var(--blue);">'+Rs(b.afterAcc||0)+'</td>'+
+      '<td style="color:var(--green);">'+Rs(b.totalPaid||0)+'</td>'+
+      '<td style="color:'+((b.due||0)>0?'var(--red)':'var(--green)')+';">'+((b.due||0)>0?Rs(b.due):'OK')+'</td>'+
+      '<td>'+sbadge(b.status, b.isDeleted)+'</td>'+
+      '<td style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">'+actions+'</td>'+
+    '</tr>';
+  }).join('');
 }
 
 // FINANCE
@@ -1071,8 +1112,35 @@ function closePay(){document.getElementById('payModal').classList.remove('on');p
 function calcPay(){if(!payId)return;var b=allBks.find(function(x){return x.id===payId;});if(!b)return;var c=parseFloat(document.getElementById('p-cash').value)||0,a=parseFloat(document.getElementById('p-acc').value)||0,nP=(b.totalPaid||0)+c+a,nD=Math.max(0,b.fin-nP);document.getElementById('pay-calc').innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--muted);">New Payment:</span><span style="color:var(--orange);font-weight:800;">'+Rs(c+a)+'</span></div><div style="display:flex;justify-content:space-between;"><span style="color:var(--muted);">Remaining After:</span><span style="color:'+(nD>0?'var(--red)':'var(--green)')+';font-weight:800;">'+(nD>0?Rs(nD):'CLEAR')+'</span></div>';}
 async function savePay(){if(!payId)return;var b=allBks.find(function(x){return x.id===payId;});if(!b)return;var c=parseFloat(document.getElementById('p-cash').value)||0,a=parseFloat(document.getElementById('p-acc').value)||0,t=document.getElementById('p-type').value;if(c===0&&a===0){toast('Enter amount!','err');return;}var nP=(b.totalPaid||0)+c+a,nD=Math.max(0,b.fin-nP);try{await db.collection('bookings').doc(payId).update({afterCash:(b.afterCash||0)+c,afterAcc:(b.afterAcc||0)+a,afterAccType:t||b.afterAccType||'',totalPaid:nP,due:nD,status:nD>0?'partial':'paid',lastPayAt:new Date().toISOString()});closePay();toast('Payment added!','ok');}catch(e){toast('Error: '+e.message,'err');}}
 
-// DELETE
-async function delBk(id){if(!confirm('Delete?'))return;try{await db.collection('bookings').doc(id).delete();toast('Deleted','err');}catch(e){toast('Error: '+e.message,'err');}}
+// DELETE & RESTORE
+async function delBk(id, isPerm){
+  if(!confirm(isPerm?'⚠️ PERMANENT DELETE? This cannot be undone.':'Archive this booking? Staff will not see it.')) return;
+  try{
+    if(isPerm) {
+      await db.collection('bookings').doc(id).delete();
+      toast('Permanently Deleted','err');
+    } else {
+      await db.collection('bookings').doc(id).update({
+        isDeleted: true,
+        deletedAt: new Date().toISOString(),
+        deletedBy: firebase.auth().currentUser.email
+      });
+      toast('Booking Archived ✅');
+    }
+  }catch(e){toast('Error: '+e.message,'err');}
+}
+
+async function restoreBk(id){
+  if(!confirm('Restore this booking to active list?')) return;
+  try {
+    await db.collection('bookings').doc(id).update({
+      isDeleted: false,
+      restoredAt: new Date().toISOString(),
+      restoredBy: firebase.auth().currentUser.email
+    });
+    toast('Booking Restored! ✅');
+  } catch(e){ toast('Error: '+e.message,'err'); }
+}
 
 // BULK REMIND
 function bulkRemind(){var dues=allBks.filter(function(b){return (b.due||0)>0&&b.ph;});if(!dues.length){toast('No pending dues!','ok');return;}dues.forEach(function(b,i){setTimeout(function(){var p=b.ph.replace(/[^0-9]/g,'');var intl=p.startsWith('0')?'92'+p.slice(1):p;window.open('https://wa.me/'+intl+'?text='+encodeURIComponent(waDue(b)),'_blank');},i*1200);});toast(dues.length+' reminders sending...','info');}
