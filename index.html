@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(e => console.log('SW Error:', e)); });
@@ -122,7 +123,20 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 .fc a{color:var(--gold);text-decoration:none;}
 ::-webkit-scrollbar{width:3px;}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+/* AUTH WRAPPER */
+#mainApp{display:none;}
+.auth-ok #mainApp{display:block;}
+.auth-ok #authScreen{display:none;}
+.auth-none #mainApp{display:none;}
+.auth-none #authScreen{display:flex;}
+
+#authScreen{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;}
+.auth-logo{font-size:60px;margin-bottom:15px;animation:float 3s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.auth-title{font-family:'Bebas Neue',sans-serif;font-size:40px;letter-spacing:4px;color:var(--gold);margin-bottom:5px;}
+.auth-sub{font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:30px;font-weight:800;}
 </style>
+<script>document.documentElement.className = localStorage.getItem('sultans_auth')==='true' ? 'auth-ok' : 'auth-none';</script>
 </head>
 <body>
 <!-- ERROR BANNER -->
@@ -147,6 +161,30 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <div style="color:var(--gold);margin-top:20px;font-weight:bold;letter-spacing:2px;font-size:12px;">LOADING ADMIN...</div>
 </div>
 
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-logo">🏏</div>
+  <div class="auth-title">SCC ADMIN</div>
+  <div class="auth-sub">Indoor Cricket Club | Restricted Access</div>
+  
+  <div style="background:var(--card); border:2px solid var(--border); border-radius:24px; padding:35px; width:100%; max-width:340px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
+    <div style="font-size:13px; color:var(--soft); margin-bottom:25px; line-height:1.6;">Please sign in with an authorized Google account to access the administration portal.</div>
+    
+    <button onclick="loginWithGoogle()" style="background:#fff; color:#000; border:none; border-radius:12px; padding:14px 20px; font-family:'Nunito',sans-serif; font-size:15px; font-weight:900; cursor:pointer; width:100%; display:flex; align-items:center; justify-content:center; gap:12px; transition:0.2s; box-shadow:0 5px 15px rgba(0,0,0,0.2);">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="22" height="22">
+      LOGIN WITH GOOGLE
+    </button>
+    
+    <div id="authErr" style="color:var(--red); font-size:11px; font-weight:800; margin-top:20px; min-height:18px;"></div>
+  </div>
+
+  <div style="margin-top:50px;">
+    <div style="font-size:10px; color:var(--muted); letter-spacing:2px; margin-bottom:8px; font-weight:900;">POWERED BY</div>
+    <div style="font-family:'Bebas Neue',sans-serif; font-size:24px; color:var(--gold); letter-spacing:3px;">JAHANZEB BALOCH AGENCY</div>
+  </div>
+</div>
+
+<div id="mainApp">
 <!-- EDIT MODAL -->
 <div class="modal-bg" id="editModal">
   <div class="modal-box">
@@ -213,7 +251,8 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <div class="sdot" id="sdot"></div>
-      <div class="clk" id="clk">--:--</div>
+      <div class="clk" id="clk" style="margin-right:10px;">--:--</div>
+      <button onclick="logout()" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:var(--red); padding:5px 12px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">LOGOUT</button>
     </div>
   </div>
 </div>
@@ -228,6 +267,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
   <div class="tab" onclick="go('history')">📜 History</div>
   <div class="tab" onclick="go('online')">🌐 Online <span id="onlineCount" style="background:var(--red);color:#fff;font-size:9px;padding:1px 5px;border-radius:10px;display:none;">0</span></div>
   <div class="tab" onclick="go('settings')">Settings</div>
+  <div class="tab" onclick="go('users')" style="color:var(--teal);">👥 Users</div>
 </div>
 
 <!-- ALARM ALERT UI -->
@@ -708,6 +748,11 @@ function startSync(){
   db.collection('expenses').onSnapshot(function(snap){allExps=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});refreshActive();});
   db.collection('customers').onSnapshot(function(snap){allCusts=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (a.nm||'').localeCompare(b.nm||'');});refreshActive();});
   db.collection('history_reset').onSnapshot(function(snap){allHistory=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});refreshActive();});
+  
+  db.collection('users').onSnapshot(function(snap){
+      allUsers = snap.docs.map(function(d){ return d.data(); });
+      renderUsers();
+  });
 }
 
 function refreshActive(){
@@ -1051,7 +1096,81 @@ function printMonthly(){
   w.document.write(h);w.document.close();
 }
 
-// INIT
+// ─── AUTH LOGIC (GOOGLE OAUTH) ───
+async function loginWithGoogle() {
+  var provider = new firebase.auth.GoogleAuthProvider();
+  var err = document.getElementById('authErr');
+  try {
+    await firebase.auth().signInWithPopup(provider);
+    toast('Signing in...', 'info');
+  } catch (e) {
+    console.error("Auth Error:", e);
+    if (err) err.textContent = '❌ Login failed: ' + e.message;
+  }
+}
+
+async function checkUserAccess(user) {
+  var err = document.getElementById('authErr');
+  if (!user) {
+    logout();
+    return;
+  }
+
+  try {
+    var doc = await db.collection('users').doc(user.email).get();
+    if (doc.exists) {
+      var userData = doc.data();
+      if (userData.authorized === false) {
+        throw new Error("Access Denied: Your account has been disabled.");
+      }
+      
+      console.log("Access Granted:", user.email);
+      localStorage.setItem('sultans_auth', 'true');
+      document.documentElement.className = 'auth-ok';
+      
+      // Start Sync if not already started
+      if (!allBks.length) {
+        startSync();
+        startAlarmListener();
+      }
+    } else {
+      // First User Auto-Authorize Logic
+      var allU = await db.collection('users').limit(1).get();
+      if (allU.empty) {
+          toast('First user detected! Authorizing as Admin...', 'info');
+          await db.collection('users').doc(user.email).set({
+              email: user.email,
+              role: 'admin',
+              authorized: true,
+              addedAt: new Date().toISOString()
+          });
+          checkUserAccess(user); // Re-run
+          return;
+      }
+      throw new Error("Access Denied: Email not authorized. Contact Jahanzeb.");
+    }
+  } catch (e) {
+    console.error("Access Error:", e);
+    if (err) err.textContent = '❌ ' + e.message;
+    firebase.auth().signOut();
+    logout();
+  }
+}
+
+firebase.auth().onAuthStateChanged(function(user) {
+  if (user) {
+    checkUserAccess(user);
+  } else {
+    logout();
+  }
+});
+
+function logout() {
+  firebase.auth().signOut().catch(function(){});
+  localStorage.removeItem('sultans_auth');
+  document.documentElement.className = 'auth-none';
+}
+
 function initSelectors(){
   var now=new Date();
   ['dm','bm','fm'].forEach(function(id){var el=document.getElementById(id);if(el&&!el.options.length)MONTHS.forEach(function(m,i){var o=document.createElement('option');o.value=i+1;o.textContent=m;if(i===now.getMonth())o.selected=true;el.appendChild(o);});});
@@ -1229,10 +1348,51 @@ async function delHistory(id) {
   } catch(e){ toast('Error: '+e.message,'err'); }
 }
 
+// ─── USER MANAGEMENT logic ───
+var allUsers = [];
+async function addUser() {
+    var email = document.getElementById('u-email').value.trim().toLowerCase();
+    var role = document.getElementById('u-role').value;
+    if (!email || !email.includes('@')) { toast('Valid Gmail address required!', 'err'); return; }
+    
+    try {
+        await db.collection('users').doc(email).set({
+            email: email,
+            role: role,
+            authorized: true,
+            addedAt: new Date().toISOString()
+        });
+        document.getElementById('u-email').value = '';
+        toast('User authorized! ✅', 'ok');
+    } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+
+async function delUser(email) {
+    if (!confirm('Remove access for ' + email + '?')) return;
+    try {
+        await db.collection('users').doc(email).delete();
+        toast('User removed!', 'ok');
+    } catch (e) { toast('Error: ' + e.message, 'err'); }
+}
+
+function renderUsers() {
+    var tbl = document.getElementById('u-tbl');
+    if (!tbl) return;
+    if (!allUsers.length) { tbl.innerHTML = '<tr><td colspan="5" class="empty">No authorized users found.</td></tr>'; return; }
+    tbl.innerHTML = allUsers.map(function(u) {
+        return '<tr>' +
+            '<td><b>' + u.email + '</b></td>' +
+            '<td><span class="bx ' + (u.role === 'admin' ? 'bx-p' : 'bx-b') + '">' + u.role.toUpperCase() + '</span></td>' +
+            '<td><span class="bx bx-g">ACTIVE</span></td>' +
+            '<td style="font-size:10px;color:var(--muted);">' + (u.addedAt ? new Date(u.addedAt).toLocaleDateString() : '—') + '</td>' +
+            '<td><button class="btn-del" onclick="delUser(\'' + u.email + '\')">Revoke Access</button></td>' +
+            '</tr>';
+    }).join('');
+}
+
 initSelectors();
-startSync();
+// startSync(), startTimer(), startAlarmListener() are now called after auth in checkUserAccess
 startTimer();
-startAlarmListener();
 
 // Hide loading overlay
 setTimeout(function() {
@@ -1245,5 +1405,6 @@ setTimeout(function() {
 
 setInterval(function(){if(document.getElementById('pg-dash').classList.contains('on')){renderTimer();}},1000);
 </script>
+</div> <!-- End #mainApp -->
 </body>
 </html>
