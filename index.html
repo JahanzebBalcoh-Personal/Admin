@@ -766,7 +766,8 @@ function startSync(){
             if(feedItems.length>50)feedItems.pop();
             // Show toast for all new activities if not initial load
             if(isNew && snap.size > feedItems.length) { toast(txt, 'info'); }
-            if(document.getElementById('pg-feed').classList.contains('on')) renderFeed();
+            var pgFeed = document.getElementById('pg-feed');
+            if(pgFeed && pgFeed.classList.contains('on')) renderFeed();
         }
       }
     });
@@ -803,7 +804,9 @@ function go(tab){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.tab').forEach(function(t){if((t.getAttribute('onclick')||'').includes("'"+tab+"'"))t.classList.add('active');});
   document.querySelectorAll('.pg').forEach(function(p){p.classList.remove('on');});
-  document.getElementById('pg-'+tab).classList.add('on');
+  var pg = document.getElementById('pg-'+tab);
+  if(pg) pg.classList.add('on');
+  
   if(tab==='dash')renderDash();
   if(tab==='bk')renderBk();
   if(tab==='fin')renderFin();
@@ -813,6 +816,7 @@ function go(tab){
   if(tab==='history')renderHistory();
   if(tab==='online')renderOnline();
   if(tab==='settings')loadSettings();
+  if(tab==='users')renderUsers();
 }
 
 function renderOnlineAlert(){
@@ -1497,7 +1501,10 @@ setTimeout(function() {
     }
 }, 300);
 
-setInterval(function(){if(document.getElementById('pg-dash').classList.contains('on')){renderTimer();}},1000);
+setInterval(function(){
+    var pgDash = document.getElementById('pg-dash');
+    if(pgDash && pgDash.classList.contains('on')){renderTimer();}
+},1000);
 </script>
 </div> <!-- End #mainApp -->
 </body>
