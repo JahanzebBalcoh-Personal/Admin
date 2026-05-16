@@ -667,7 +667,6 @@ async function registerMessaging() {
 }
 
 function startAlarmListener() {
-    // Request permission
     if ("Notification" in window && Notification.permission !== "granted") {
         Notification.requestPermission();
     }
@@ -676,36 +675,31 @@ function startAlarmListener() {
         snap.docChanges().forEach(function(ch) {
             if (ch.type === 'added') {
                 var data = ch.doc.data();
+                var at = data.at;
+                var atMs = (at && at.toMillis) ? at.toMillis() : new Date(at).getTime();
                 var now = new Date().getTime();
-                var at = new Date(data.at).getTime();
-                if (now - at < 60000) { // Only if alert is within last 1 minute
+                
+                if (now - atMs < 30000) { // Fast trigger: within 30 seconds
                     playSiren(data.txt);
-                    
-                    // Browser Notification
-                    if ("Notification" in window) {
-                        if (Notification.permission === "granted") {
-                            showNotification("🚨 EMERGENCY ALERT", {
-                                body: data.txt,
-                                icon: "icon.jpg",
-                                requireInteraction: true
-                            });
-                        }
+                    if (Notification.permission === "granted") {
+                        showNotification("🚨 NEW ALERT", { body: data.txt, icon: "icon.jpg", requireInteraction: true });
                     }
                 }
             }
         });
     });
 }
+
 function playSiren(msg) {
     var m = document.getElementById('alarmMsg'); if(m) m.textContent = msg || 'New Online Booking!';
     var a = document.getElementById('alarmAlert'); if(a) a.style.display = 'block';
     if (!sirenAudio) {
-        // Updated Siren Music - More professional alert sound
         sirenAudio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         sirenAudio.loop = true;
     }
-    sirenAudio.play().catch(function(e) { console.log("Sound blocked:", e); });
+    sirenAudio.play().catch(function(e) { console.warn("Siren blocked by browser. User interaction needed."); });
 }
+
 function stopAlarm() {
     var a = document.getElementById('alarmAlert'); if(a) a.style.display = 'none';
     if (sirenAudio) {
@@ -714,79 +708,80 @@ function stopAlarm() {
     }
 }
 
-// FIREBASE
+// ─── FIREBASE SYNC ───
 function startSync(){
-    try{
-        document.getElementById('sdot').style.background='var(--orange)';
+    try {
+        var sdot = document.getElementById('sdot');
+        if(sdot) sdot.style.background = 'var(--orange)';
         startAlarmListener();
         registerMessaging();
-        // Permission trigger on first click anywhere
+        
+        // Notification permission on first interaction
         document.addEventListener('click', function() {
             if ("Notification" in window && Notification.permission === "default") {
-                Notification.requestPermission().then(perm => {
-                    if(perm === 'granted') registerMessaging();
-                });
+                Notification.requestPermission();
             }
         }, {once: true});
-    }catch(e){}
-  db.collection('bookings').onSnapshot(function(snap){
-    allBks=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.createdAt||b.date||'').localeCompare(a.createdAt||a.date||'');});
-    document.getElementById('sdot').style.background='var(--green)';
-    snap.docChanges().forEach(function(ch){
-      if(ch.type==='added' || ch.type==='modified'){
-        var d=ch.doc.data(),t=new Date().toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit'}),txt='',color='var(--green)';
-        
-        // Notification Sound Logic
-        var isNew = ch.type==='added';
-        
-        if(d.status==='pre'){txt='Pre-Match: '+d.nm+' — '+Rs(d.fin)+' (Adv: '+Rs(d.advAmt)+')';color='var(--orange)';}
-        else if(d.status==='paid'){txt='Complete: '+d.nm+' — '+Rs(d.fin)+' PAID';color='var(--green)';}
-        else if(d.status==='partial'){txt='Partial: '+d.nm+' — Due: '+Rs(d.due);color='var(--gold)';}
-        else if(d.status==='waiting_approval'||d.status==='pending'){
-            txt='🌐 Online Request: '+d.nm;
-            color='var(--blue)';
-            // Sound and Toast for new online requests
-            if(isNew) {
+    } catch(e) {}
+
+    // 1. BOOKINGS LISTENER
+    db.collection('bookings').onSnapshot(function(snap) {
+        allBks = snap.docs.map(function(d){ return Object.assign({}, d.data(), {id: d.id}); }).sort(function(a,b){
+            return (b.createdAt || b.date || '').localeCompare(a.createdAt || a.date || '');
+        });
+        if(sdot) sdot.style.background = 'var(--green)';
+
+        snap.docChanges().forEach(function(ch) {
+            var d = ch.doc.data();
+            var isNew = ch.type === 'added';
+            
+            if(isNew && (d.status === 'waiting_approval' || d.status === 'pending')) {
+                playSiren("🌐 NEW ONLINE BOOKING: " + d.nm);
                 toast('New Online Booking Request! 🔔', 'info');
-                
-                // Browser Notification
-                if ("Notification" in window && Notification.permission === "granted") {
+                if (Notification.permission === "granted") {
                     showNotification("New Online Booking Request! 🏏", {
                         body: d.nm + " has requested a slot for " + (d.st || "unknown time"),
                         icon: "icon.jpg"
                     });
                 }
-
-                try { new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3').play(); } catch(e){}
             }
-        }
-
-        if(txt){
-            feedItems.unshift({txt:txt,t:t,color:color});
-            if(feedItems.length>50)feedItems.pop();
-            // Show toast for all new activities if not initial load
-            if(isNew && snap.size > feedItems.length) { toast(txt, 'info'); }
-            var pgFeed = document.getElementById('pg-feed');
-            if(pgFeed && pgFeed.classList.contains('on')) renderFeed();
-        }
-      }
+        });
+        renderDash();
+        refreshActive();
+    }, function(err) {
+        if(sdot) sdot.style.background = 'var(--red)';
+        console.error("Bookings Sync Error:", err);
     });
-    renderOnlineAlert();
-    refreshActive();
-  },function(err){
-    try{document.getElementById('sdot').style.background='var(--red)';}catch(e){}
-    var eb=document.getElementById('errBanner');
-    if(eb){eb.style.display='block';eb.textContent='Firebase Error: '+err.code+' — '+err.message;}
-    console.log(err);
-  });
-  db.collection('expenses').onSnapshot(function(snap){allExps=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});refreshActive();});
-  db.collection('customers').onSnapshot(function(snap){allCusts=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (a.nm||'').localeCompare(b.nm||'');});refreshActive();});
-  db.collection('history_reset').onSnapshot(function(snap){allHistory=snap.docs.map(function(d){return Object.assign({},d.data(),{id:d.id});}).sort(function(a,b){return (b.date||'').localeCompare(a.date||'');});refreshActive();});
-  
-  db.collection('users').onSnapshot(function(snap){
-      allUsers = snap.docs.map(function(d){ return d.data(); });
-      renderUsers();
-  });
+
+    // 2. EXPENSES LISTENER
+    db.collection('expenses').onSnapshot(function(snap) {
+        allExps = snap.docs.map(function(d){ return Object.assign({}, d.data(), {id: d.id}); }).sort(function(a,b){
+            return (b.date || '').localeCompare(a.date || '');
+        });
+        refreshActive();
+    });
+
+    // 3. CUSTOMERS LISTENER
+    db.collection('customers').onSnapshot(function(snap) {
+        allCusts = snap.docs.map(function(d){ return Object.assign({}, d.data(), {id: d.id}); }).sort(function(a,b){
+            return (a.nm || '').localeCompare(b.nm || '');
+        });
+        refreshActive();
+    });
+
+    // 4. HISTORY LISTENER
+    db.collection('history_reset').onSnapshot(function(snap) {
+        allHistory = snap.docs.map(function(d){ return Object.assign({}, d.data(), {id: d.id}); }).sort(function(a,b){
+            return (b.date || '').localeCompare(a.date || '');
+        });
+        refreshActive();
+    });
+
+    // 5. USERS LISTENER
+    db.collection('users').onSnapshot(function(snap) {
+        allUsers = snap.docs.map(function(d){ return d.data(); });
+        renderUsers();
+    });
 }
 
 function refreshActive(){
@@ -1194,80 +1189,69 @@ function printMonthly(){
   w.document.write(h);w.document.close();
 }
 
-// ─── AUTH LOGIC (GOOGLE OAUTH) ───
-async function loginWithGoogle() {
-  var provider = new firebase.auth.GoogleAuthProvider();
-  var err = document.getElementById('authErr');
-  try {
-    await firebase.auth().signInWithPopup(provider);
-    toast('Signing in...', 'info');
-  } catch (e) {
-    console.error("Auth Error:", e);
-    if (err) err.textContent = '❌ Login failed: ' + e.message;
-  }
+// ─── AUTHENTICATION & ACCESS ───
+var userWatcher = null;
+
+function loginWithGoogle() {
+    var p = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(p).then(function(res) {
+        localStorage.setItem('sultans_auth', 'true');
+        document.documentElement.className = 'auth-ok';
+    }).catch(function(err) {
+        var errEl = document.getElementById('authErr');
+        if(errEl) errEl.textContent = "Unauthorized or Error: " + err.message;
+    });
 }
-
-async function checkUserAccess(user) {
-  var err = document.getElementById('authErr');
-  if (!user) {
-    logout();
-    return;
-  }
-
-  try {
-    var doc = await db.collection('users').doc(user.email).get();
-    if (doc.exists) {
-      var userData = doc.data();
-      if (userData.authorized === false) {
-        throw new Error("Access Denied: Your account has been disabled.");
-      }
-      
-      console.log("Access Granted:", user.email);
-      localStorage.setItem('sultans_auth', 'true');
-      document.documentElement.className = 'auth-ok';
-      
-      // Start Sync if not already started
-      if (!allBks.length) {
-        startSync();
-        startAlarmListener();
-      }
-    } else {
-      // First User Auto-Authorize Logic
-      var allU = await db.collection('users').limit(1).get();
-      if (allU.empty) {
-          toast('First user detected! Authorizing as Admin...', 'info');
-          await db.collection('users').doc(user.email).set({
-              email: user.email,
-              role: 'admin',
-              authorized: true,
-              addedAt: new Date().toISOString()
-          });
-          checkUserAccess(user); // Re-run
-          return;
-      }
-      throw new Error("Access Denied: Email not authorized. Contact Jahanzeb.");
-    }
-  } catch (e) {
-    console.error("Access Error:", e);
-    if (err) err.textContent = '❌ ' + e.message;
-    firebase.auth().signOut();
-    logout();
-  }
-}
-
-firebase.auth().onAuthStateChanged(function(user) {
-  if (user) {
-    checkUserAccess(user);
-  } else {
-    logout();
-  }
-});
 
 function logout() {
-  firebase.auth().signOut().catch(function(){});
-  localStorage.removeItem('sultans_auth');
-  document.documentElement.className = 'auth-none';
+    if(userWatcher) userWatcher();
+    auth.signOut().then(function() {
+        localStorage.removeItem('sultans_auth');
+        document.documentElement.className = 'auth-none';
+    }).catch(function(){});
 }
+
+auth.onAuthStateChanged(function(user) {
+    var loading = document.getElementById('loadingOverlay');
+    var authErr = document.getElementById('authErr');
+    
+    if (user) {
+        if(userWatcher) userWatcher();
+        userWatcher = db.collection('users').doc(user.email).onSnapshot(function(doc) {
+            if(doc.exists && doc.data().role === 'admin') {
+                localStorage.setItem('sultans_auth', 'true');
+                document.documentElement.className = 'auth-ok';
+                
+                // Sidebar UI
+                var nm = document.getElementById('user-name'); if(nm) nm.textContent = user.displayName;
+                var ini = document.getElementById('user-initials'); 
+                if(ini) ini.textContent = user.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                
+                if(loading) {
+                    loading.style.opacity = '0';
+                    setTimeout(() => { loading.style.display = 'none'; }, 500);
+                }
+                
+                startSync();
+                loadSettings();
+                initSelectors();
+            } else {
+                if(authErr) authErr.textContent = "Access Denied: You are not authorized as Admin.";
+                logout();
+            }
+        }, function(err) {
+            if(authErr) authErr.textContent = "Database Error: " + err.message;
+            logout();
+        });
+    } else {
+        localStorage.removeItem('sultans_auth');
+        document.documentElement.className = 'auth-none';
+        if(loading) {
+            loading.style.opacity = '0';
+            setTimeout(() => { loading.style.display = 'none'; }, 500);
+        }
+    }
+});
 
 function initSelectors(){
   var now=new Date();
