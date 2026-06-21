@@ -620,6 +620,25 @@ function tick(){
 setInterval(tick,1000);tick();
 
 var Rs=function(n){return 'Rs.'+Number(n||0).toLocaleString('en-PK');};
+
+// SCREEN WAKE LOCK
+var wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('Wake Lock active');
+    }
+  } catch (err) {}
+}
+document.addEventListener('visibilitychange', async function() {
+  if (wakeLock !== null && document.visibilityState === 'visible') {
+    await requestWakeLock();
+  }
+});
+requestWakeLock();
+document.addEventListener('click', requestWakeLock, {once: true});
+
 var today=function(){var d=new Date();var y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return y+'-'+m+'-'+dd;};
 function toast(m,t){var el=document.getElementById('toast');el.textContent=m;el.className='toast on '+(t||'ok');setTimeout(function(){el.className='toast';},3000);}
 function pmbadge(m){var mp={cash:'bx-g',bank:'bx-b',jazz:'bx-p',easy:'bx-t'};var ml={cash:'Cash',bank:'Alfalah',jazz:'Jazz',easy:'Easy'};return '<span class="bx '+(mp[m]||'bx-g')+'">'+(ml[m]||m||'—')+'</span>';}
