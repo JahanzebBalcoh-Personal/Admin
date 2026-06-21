@@ -1213,7 +1213,7 @@ function loginWithEmail() {
     btn.disabled = true;
     
     db.collection('users').doc(email).get().then(function(doc) {
-        if (doc.exists && doc.data().role === 'admin') {
+        if (doc.exists && (doc.data().role === 'admin' || doc.data().role === 'superadmin')) {
             loggedInEmail = email;
             localStorage.setItem('sultans_auth', 'true');
             localStorage.setItem('sultans_email', email);
@@ -1239,7 +1239,7 @@ function startEmailSession(email) {
     
     if (userWatcher) userWatcher();
     userWatcher = db.collection('users').doc(email).onSnapshot(function(doc) {
-        if (doc.exists && doc.data().role === 'admin') {
+        if (doc.exists && (doc.data().role === 'admin' || doc.data().role === 'superadmin')) {
             loggedInEmail = email;
             localStorage.setItem('sultans_auth', 'true');
             localStorage.setItem('sultans_email', email);
