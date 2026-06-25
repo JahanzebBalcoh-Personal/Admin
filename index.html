@@ -253,6 +253,7 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
+      <button id="installPwaBtn" style="display:none; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2); color:var(--green); padding:5px 12px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">📱 INSTALL APP</button>
       <div class="sdot" id="sdot"></div>
       <div class="clk" id="clk" style="margin-right:10px;">--:--</div>
       <button onclick="logout()" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.2); color:var(--red); padding:5px 12px; border-radius:8px; font-size:10px; font-weight:800; cursor:pointer;">LOGOUT</button>
@@ -600,6 +601,30 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 <div class="toast" id="toast"></div>
 
 <script>
+// PWA Install Logic
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const installBtn = document.getElementById('installPwaBtn');
+    if(installBtn) {
+        installBtn.style.display = 'inline-block';
+        installBtn.addEventListener('click', () => {
+            installBtn.style.display = 'none';
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('Admin accepted the PWA prompt');
+                } else {
+                    console.log('Admin dismissed the PWA prompt');
+                    installBtn.style.display = 'inline-block';
+                }
+                deferredPrompt = null;
+            });
+        });
+    }
+});
+
 // ─── FIREBASE INIT ───
 if(!firebase.apps.length){firebase.initializeApp({apiKey:"AIzaSyBfhbjD0b8UaISn1QrK6E-Ci5Yr7HcUTzA",authDomain:"sultans-cricket.firebaseapp.com",projectId:"sultans-cricket",storageBucket:"sultans-cricket.firebasestorage.app",messagingSenderId:"975861366304",appId:"1:975861366304:web:6bfef2fc3e3b01d0284645",databaseURL:""});}
 var db=firebase.firestore();
