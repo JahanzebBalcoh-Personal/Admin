@@ -457,7 +457,21 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
     </div>
   </div>
 
-  <!-- PASSWORD CHANGE -->
+  <!-- TELEGRAM NOTIFICATIONS -->
+  <div class="card" style="background:rgba(0,136,204,0.05);border-color:rgba(0,136,204,0.3);margin-top:12px;">
+    <div class="sh-t" style="margin-bottom:6px;">✈️ Telegram Bot Notifications</div>
+    <div style="font-size:11px;color:var(--soft);margin-bottom:14px;">Naye online bookings ki Telegram notification milegi. Bot token aur Chat ID yahan save karo.</div>
+    <div class="fl">
+      <label>Bot Token</label>
+      <input type="text" id="tgToken" placeholder="8847041125:AAHjo..." style="font-size:13px;font-family:'JetBrains Mono',monospace;">
+    </div>
+    <div class="fl">
+      <label>Your Chat ID</label>
+      <input type="text" id="tgChatId" placeholder="e.g. 1749605776" style="font-size:13px;font-family:'JetBrains Mono',monospace;">
+    </div>
+    <div style="font-size:10px;color:var(--soft);margin-bottom:8px;">👉 Chat ID pata karne ke liye apne Telegram bot ko message karo, phir yahan paste karo: <b>1749605776</b> (aapka ID)</div>
+    <div id="tgStatus" style="font-size:12px;font-weight:700;min-height:16px;padding:0;display:none;"></div>
+  </div>
   <div class="card" style="background:rgba(240,180,41,0.05);border-color:rgba(240,180,41,0.25);margin-top:12px;">
     <div class="sh-t" style="margin-bottom:6px;">🔐 Club App Password Change</div>
     <div style="font-size:11px;color:var(--soft);margin-bottom:14px;">Club app ka login password yahan se badlo.</div>
@@ -1341,6 +1355,9 @@ function loadSettings(){
       if(d.maint!==undefined) document.getElementById('maintToggle').checked=d.maint;
       if(d.alwaysPin!==undefined) document.getElementById('alwaysPinToggle').checked=d.alwaysPin;
       if(d.version) document.getElementById('appVer').value=d.version;
+      // Load Telegram settings
+      if(d.telegram_token) document.getElementById('tgToken').value=d.telegram_token;
+      if(d.telegram_chat_id) document.getElementById('tgChatId').value=d.telegram_chat_id;
     }
   }).catch(function(){});
 }
@@ -1352,7 +1369,10 @@ function saveSettings(){
   var maint=document.getElementById('maintToggle').checked;
   var alwaysPin=document.getElementById('alwaysPinToggle').checked;
   var version=document.getElementById('appVer').value.trim();
+  var tgToken=document.getElementById('tgToken').value.trim();
+  var tgChatId=document.getElementById('tgChatId').value.trim();
   var msg=document.getElementById('passMsg');
+  var tgStatus=document.getElementById('tgStatus');
   
   var upd={updatedAt:new Date().toISOString(), maint:maint, alwaysPin:alwaysPin, version:version};
   
@@ -1363,16 +1383,22 @@ function saveSettings(){
   }
   
   if(rate){ upd.rate=parseInt(rate); }
+  if(tgToken){ upd.telegram_token=tgToken; }
+  if(tgChatId){ upd.telegram_chat_id=tgChatId; }
 
   db.collection('settings').doc('admin').set(upd,{merge:true}).then(function(){
     if(upd.password) localStorage.setItem('club_pass',upd.password);
     if(upd.rate) localStorage.setItem('club_rate',upd.rate);
     msg.style.display='block';msg.style.background='rgba(34,197,94,0.12)';msg.style.color='var(--green)';
-    msg.textContent='Settings saved! Club app auto-sync ho jaye gi.';
+    msg.textContent='✅ Settings saved! Club app auto-sync ho jaye gi.';
+    if(tgToken||tgChatId){
+      tgStatus.style.display='block';tgStatus.style.color='var(--green)';
+      tgStatus.textContent='✅ Telegram settings saved! Test booking karo — notification aaye gi.';
+    }
     loadSettings();
     document.getElementById('newPass').value='';
     document.getElementById('confPass').value='';
-    setTimeout(function(){msg.style.display='none';},6000);
+    setTimeout(function(){msg.style.display='none'; tgStatus.style.display='none';},6000);
   }).catch(function(e){
     msg.style.display='block';msg.style.background='rgba(240,180,41,0.12)';msg.style.color='var(--gold)';
     msg.textContent='Error saving: '+e.message;
